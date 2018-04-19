@@ -1,5 +1,5 @@
 ---
-title: "Shopping Malls London"
+title: "London shopping malls"
 date: "`r Sys.Date()`"
 output: 
     html_document:
@@ -8,3 +8,30 @@ output:
         number_sections: true
         theme: flatly
 ---
+
+```{r results = 'asis', warnings = FALSE, message = FALSE}
+library (magrittr)
+library (osmdata)
+library (sf)
+```
+
+## Summary statistics
+
+```{r}
+crs_utm_london <- 32630
+bbox_coords <- c (-0.510375, 51.286758, 0.334015, 51.691875)
+
+shops_gpkg <- "shops.gpkg"
+
+if (!shops_gpkg %in% dir)
+{
+    shops <- opq (bbox = bbox_coords) %>%
+        add_osm_feature (key = "shop") %>%
+        osmdata_sf %>%
+        extract2 ("osm_points") %>%
+        st_as_sf %>%
+        st_transform (crs_utm_london)
+    st_write (shops$geometry, shops_gpkg)
+}
+shops <- st_read (shops_gpkg)
+```
