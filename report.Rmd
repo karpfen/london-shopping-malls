@@ -48,8 +48,12 @@ if (!shops_gpkg %in% dir ())
 shops <- st_read (shops_gpkg)
 malls <- st_read (malls_gpkg)
 
-shops_in_malls <- st_within (shops, malls, sparse = TRUE)
-shops_keep_idx <- apply (shops_in_malls, 1, any) %>% which
+# Add 5 minute buffer, assuming 1.4 m/s walking speed
+buffdist <- 1.4 * 5 * 60
+malls %<>% st_buffer (buffdist)
+
+shops_in_malls <- st_within (shops, malls)
+shops_keep_idx <- which (sapply (shops_in_malls, length) >= 0)
 mall_ids <- shops_in_malls %>% extract (shops_keep_idx) %>% unlist
 
 shops %<>% extract (shops_keep_idx, )
