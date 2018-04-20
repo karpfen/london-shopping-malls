@@ -15,6 +15,30 @@ library (osmdata)
 library (sf)
 ```
 
+```{r results = 'asis', warnings = FALSE, message = FALSE}
+occurence <- function (component, n, m)
+{
+    l <- length (component)
+    return (l >= n && l <= m)
+}
+
+property <- function (component, prop)
+{
+}
+
+correlation <- function (c1, c2, ns)
+{
+}
+
+distribution <- function (component, sai)
+{
+}
+
+proximity <- function (c1, c2, av)
+{
+}
+```
+
 ## Summary statistics
 
 ```{r results = 'asis', warnings = FALSE, message = FALSE}
