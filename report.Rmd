@@ -17,13 +17,25 @@ library (sf)
 
 ## Summary statistics
 
-```{r}
+```{r results = 'asis', warnings = FALSE, message = FALSE}
 crs_utm_london <- 32630
 bbox_coords <- c (-0.510375, 51.286758, 0.334015, 51.691875)
 
 shops_gpkg <- "shops.gpkg"
+malls_gpkg <- "malls.gpkg"
 
-if (!shops_gpkg %in% dir)
+if (!malls_gpkg %in% dir ())
+{
+    malls <- opq (bbox = bbox_coords) %>%
+        add_osm_feature (key = "shop", value = "mall") %>%
+        osmdata_sf %>%
+        extract2 ("osm_polygons") %>%
+        st_as_sf %>%
+        st_transform (crs_utm_london)
+    st_write (malls$geometry, malls_gpkg)
+}
+
+if (!shops_gpkg %in% dir ())
 {
     shops <- opq (bbox = bbox_coords) %>%
         add_osm_feature (key = "shop") %>%
@@ -34,4 +46,11 @@ if (!shops_gpkg %in% dir)
     st_write (shops$geometry, shops_gpkg)
 }
 shops <- st_read (shops_gpkg)
+malls <- st_read (malls_gpkg)
+
+shops_in_malls <- st_within (shops, malls, sparse = TRUE)
+shops_keep_idx <- apply (shops_in_malls, 1, any) %>% which
+mall_ids <- shops_in_malls %>% extract (shops_keep_idx) %>% unlist
+
+shops %<>% extract (shops_keep_idx, )
 ```
