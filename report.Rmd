@@ -77,7 +77,7 @@ buffdist <- 1.4 * 5 * 60
 malls %<>% st_buffer (buffdist)
 
 shops_in_malls <- st_within (shops, malls)
-shops_keep_idx <- which (sapply (shops_in_malls, length) >= 0)
+shops_keep_idx <- (sapply (shops_in_malls, length) > 0) %>% which
 mall_ids <- shops_in_malls %>% extract (shops_keep_idx) %>% unlist
 
 shops %<>% extract (shops_keep_idx, )
