@@ -45,38 +45,77 @@ proximity <- function (c1, c2, av)
 crs_utm_london <- 32630
 bbox_coords <- c (-0.510375, 51.286758, 0.334015, 51.691875)
 
+osm_to_sf <- function (bbox, crs, geom_type, key, value)
+{
+    feat <- opq (bbox = bbox)
+    if (missing (value))
+    {
+        feat %<>% add_osm_feature (key = key)
+    } else
+        feat %<>% add_osm_feature (key = key, value = value)
+    feat %<>% osmdata_sf %>%
+        extract2 (geom_type) %>%
+        st_as_sf %>%
+        st_transform (crs)
+    feat
+}
+
 shops_gpkg <- "shops.gpkg"
 malls_gpkg <- "malls.gpkg"
+amenities_gpkg <- "amenities.gpkg"
+public_transport_station_gpkg <- "public_transport_station.gpkg"
+junctions_gpkg <- "junctions.gpkg"
+highways_gpkg <- "highways.gpkg"
 
 if (!malls_gpkg %in% dir ())
 {
-    malls <- opq (bbox = bbox_coords) %>%
-        add_osm_feature (key = "shop", value = "mall") %>%
-        osmdata_sf %>%
-        extract2 ("osm_polygons") %>%
-        st_as_sf %>%
-        st_transform (crs_utm_london)
+    malls <- osm_to_sf (bbox = bbox_coords, crs = crs_utm_london, key = "shop",
+                        value = "mall", geom_type = "osm_polygons")
     st_write (malls$geometry, malls_gpkg)
 }
 
 if (!shops_gpkg %in% dir ())
 {
-    shops <- opq (bbox = bbox_coords) %>%
-        add_osm_feature (key = "shop") %>%
-        osmdata_sf %>%
-        extract2 ("osm_points") %>%
-        st_as_sf %>%
-        st_transform (crs_utm_london)
+    shops <- osm_to_sf (bbox = bbox_coords, crs = crs_utm_london, key = "shop",
+                        geom_type = "osm_points")
     st_write (shops$geometry, shops_gpkg)
 }
+
+if (!public_transport_station_gpkg %in% dir ())
+{
+    public_transport <- osm_to_sf (bbox = bbox_coords, crs = crs_utm_london,
+                                   key = "public_transport", value = "station",
+                                   geom_type = "osm_points")
+    st_write (public_transport$geometry, public_transport_station_gpkg)
+}
+if (!junctions_gpkg %in% dir ())
+{
+    junctions <- osm_to_sf (bbox = bbox_coords, crs = crs_utm_london,
+                                   key = "highway", value = "motorway_junction",
+                                   geom_type = "osm_points")
+    st_write (junctions$geometry, junctions_gpkg)
+}
+if (!amenities_gpkg %in% dir ())
+{
+    amenities <- osm_to_sf (bbox = bbox_coords, crs = crs_utm_london,
+                                   key = "amenity", geom_type = "osm_points")
+    st_write (amenities$geometry, amenities_gpkg)
+}
+if (!highways_gpkg %in% dir ())
+{
+    highways <- osm_to_sf (bbox = bbox_coords, crs = crs_utm_london,
+                           geom_type = "osm_lines", key = "highway",
+                           value = c ("primary", "secondary"))
+    st_write (highways$geometry, highways_gpkg)
+}
+
 shops <- st_read (shops_gpkg)
 malls <- st_read (malls_gpkg)
 
-# Add 5 minute buffer, assuming 1.4 m/s walking speed
-buffdist <- 1.4 * 5 * 60
-malls %<>% st_buffer (buffdist)
+malls_500m <- malls %>% st_buffer (500)
+malls_5000m <- malls %>% st_buffer (5000)
 
-shops_in_malls <- st_within (shops, malls)
+shops_in_malls <- st_within (shops, malls_500m)
 shops_keep_idx <- (sapply (shops_in_malls, length) > 0) %>% which
 mall_ids <- shops_in_malls %>% extract (shops_keep_idx) %>% unlist
 
