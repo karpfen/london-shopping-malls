@@ -1,0 +1,104 @@
+{
+	"amenity": {
+		"alcohol":
+					["bar", "pub", "biergarten"],
+		"sustenance": 		
+					["bbq", "cafe", "drinking_water", "fast_food", "food_court", "ice_cream", "restaurant"],
+		"education": 		
+					["college", "kindergarten", "library", "archive", "public_bookcase", "school", "music_school", "driving_school", "language_school", "university"],
+		"transportation":
+					["bicycle_parking", "bicycle_repair_station", "bicycle_rental", "boat_rental", "boat_sharing", "bus_station", "car_rental", "car_sharing", "car_wash", "charging_station", "furry_terminal", "fuel", "grit_bin", "motorcycle_parking", "parking", "parking_entrance", "parking_space", "taxi"],
+		"financial":		
+					["atm", "bank", "bureau_de_change"],
+		"healthcare":
+					["baby_hatch", "clinic", "dentist", "doctors", "hospital", "nursing_home", "pharmacy", "social_facility", "veterinary", "blood_donation"],
+		"entertainment_art_culture":
+					["arts_centre", "brothel", "casino", "cinema", "community_centre", "fountain", "gambling", "nightclub", "planetarium", "social_centre", "stripclub", "studio", "swingerclub", "theatre"],
+							
+		"government":
+					["police", "post_office", "townhall", "courthouse", "embassy", "fire_station", "prison"],
+		"religion":
+					["crematorium", "crypt", "grave_yard", "place_of_worship"],
+		"others":
+					null
+	},
+	"shop": {
+		"alcohol" :
+					["alcohol", "beverages", "beer", "wine"],
+		"food_beverages":
+					["bakery", "brewing_supplies", "butcher", "cheese", "chocolate", "coffee", "confectionery", "convenience", "deli", "dairy", "farm", "greengrocer", "frozen_food", "ice_cream","pasta", "pastry", "seafood", "spices", "tea"],
+		"general_department_store_mall":
+					["department_store", "general", "kiosk", "mall", "supermarket", "wholesale"],
+		"clothing_shoes_accessories":
+					["baby_goods", "bag", "boutique", "clothes", "fabric", "fashion", "jewelry", "leather", "sewing", "shoes", "tailor", "watches"],
+		"discount_store_charity":
+					["charity", "second_hand", "variety_store"],
+		"health_beauty":
+					["beauty", "chemist", "cosmetics", "erotic", "hairdresser", "hairdresser_supply", "hearing_aids", "herbalist", "massage", "medical_supply", "nutrition_supplements", "optician", "perfumery", "tattoo"],
+		"diy_household_gardening_building_material":
+					["argarian", "bathroom_furnishing", "doityourself", "electrical", "energy", "fireplace", "florist", "garden_centre", "garden_furniture", "gas", "glaziery", "hardware", "houseware", "locksmith", "paint","security", "trade"],
+		"furniture_interior":
+					["antiques", "bed", "candles", "carpet", "curtain", "doors", "flooring", "furniture", "interior_decoration", "kitchen", "lamps", "tiles", "window_blind"],
+		"electronics":
+					["computer", "robot", "electronics", "hifi", "mobile_phone", "radiotechnics", "vacuum_cleaner"],
+		"outdoors_sport_vehicle":
+					["atv", "bicycle", "boat", "car", "car_repair", "car_parts", "fuel", "fishing", "free_flying", "hunting", "jetski", "motocycle", "outdoor", "scuba_diving", "ski", "snowmobile", "sports", "swimming_pool", "tyres"],
+		"art_music_hobbies":
+					["art", "collector", "craft", "frame", "games", "model", "music", "musical_instrument", "photo", "camera", "trophy", "video", "video_games"],
+		"stationery_gifts_books_newspaper":
+					["anime", "books", "gift", "lottery", "newsagent", "stationery", "ticket"],
+		"others":
+					null
+	},
+	"natural": {
+		"vegetation": 
+					["wood", "tree_row", "tree", "scrub", "heath", "grassland", "fell", "bare_rock", "scree", "shingle", "sand", "mud"],
+		"water":
+					["water", "wetland", "glacier", "bay", "cape", "beach", "coastline", "spring", "hot_spring", "geyser", "blowhole"],
+		"landform":
+					["peak", "volcano", "valley", "ridge", "arete", "cliff", "rock", "stone", "sinkhole", "cave_entrance"]
+	},
+	"building": {
+		"accommodation":
+					["apartments", "farm", "hotel", "house", "detached", "residential", "dormitory", "terrace", "houseboat", "bungalow", "static_caravan"],
+		"commercial":
+					["commercial", "industrial", "retail", "warehouse", "kiosk"],
+		"civic":
+					["bakehouse", "cathedral", "chapel", "church", "kindergarten", "mosque", "temple", "synagogue", "shrine", "civic", "hospital", "school", "stadium", "train_station", "transportation", "university", "grandstand", "public"],
+		"others":
+					null
+	},
+	"emergency": {
+		"medical":
+					["ambulance_station", "defibrillator", "landing_site"],
+		"firefighting":
+					["fire_extinguisher", "fire_flapper", "fire_hose", "fire_hydrant", "water_tank", "fire_water_pond", "suction_point"],
+		"lifeguard":
+					["lifeguard_base", "lifeguard_tower", "lifeguard_platform", "lifeguard_place", "life_ring"],
+		"others":
+					null
+	},
+	"highway": {
+		"link":
+					["motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link", "motor_junction"],
+		"road":
+					["motorway", "trunk", "primary", "secondary", "tertiary", "unclasified"],
+		"walkable_road":
+					["residential", "service"],
+		"no_car_way":
+					["footway", "bridleway", "steps", "path", "cycleway", "crossing"],
+		"highway_feature":
+					["mini_roundabout", "passing_place", "rest_area", "services"],
+		"bus_stop":
+					["bus_stop"],
+		"others":
+					null
+	},
+	"tourism":			null,
+	"leisure":			null,
+	"historic":			null,
+	"military": 		null,
+	"aeroway":			null,
+	"office":			null,
+	"public_transport":	null				
+}
