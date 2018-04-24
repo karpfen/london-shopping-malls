@@ -71,14 +71,15 @@ for (i in seq_along (shop_classes))
             sh <- try (osm_to_sf (bbox = bbox_coords, crs = crs_utm_london,
                              key = "shop", value = vals [j],
                              geom_type = "osm_points"), silent = TRUE)
-            if (class (sh) != "try-error")
+            if (!inherits (sh, "try-error"))
             {
                 if (dim (sh) [1] > 0)
                     sh %<>% st_intersection (malls_500m)
                 if (dim (sh) [1] > 0)
                 {
                     sh <- st_sf (data.frame (sh$geometry,
-                                             key = shop_classes [i],
+                                             class = shop_classes [i],
+                                             key = "shop",
                                              value = vals [j]))
                     st_write (sh, paste0 (dir_out, gpkg_name))
                 }
@@ -119,14 +120,15 @@ for (i in seq_along (amenity_classes))
             am <- try (osm_to_sf (bbox = bbox_coords, crs = crs_utm_london,
                              key = "amenity", value = vals [j],
                              geom_type = "osm_points"), silent = TRUE)
-            if (class (am) != "try-error")
+            if (!inherits (am, "try-error"))
             {
                 if (dim (am) [1] > 0)
                     am %<>% st_intersection (malls_500m)
                 if (dim (am) [1] > 0)
                 {
-                    am <- st_sf (data.frame (sh$geometry,
-                                             key = amenity_classes [i],
+                    am <- st_sf (data.frame (am$geometry,
+                                             class = amenity_classes [i],
+                                             key = "amenity",
                                              value = vals [j]))
                     st_write (am, paste0 (dir_out, gpkg_name))
                 }
@@ -151,7 +153,6 @@ highways <- st_read (paste0 (dir_out, highways_gpkg))
 junctions <- st_read (paste0 (dir_out, junctions_gpkg))
 public_transport <- st_read (paste0 (dir_out, public_transport_station_gpkg))
 shops <- st_read (paste0 (dir_out, shops_gpkg))
-
 ```
 
 ```{r results = 'asis', warnings = FALSE, message = FALSE}
