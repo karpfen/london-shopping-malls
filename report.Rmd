@@ -87,7 +87,7 @@ for (i in seq_along (shop_classes))
     }
 }
 if (!shops_gpkg %in% dir (dir_out))
-    system ("merge_gpkg.sh shop")
+    system ("bash merge_gpkg.sh shop")
 
 if (!public_transport_station_gpkg %in% dir (dir_out))
 {
@@ -135,7 +135,7 @@ for (i in seq_along (amenity_classes))
     }
 }
 if (!amenities_gpkg %in% dir (dir_out))
-    system ("merge_gpkg.sh amenity")
+    system ("bash merge_gpkg.sh amenity")
 
 if (!highways_gpkg %in% dir (dir_out))
 {
@@ -146,9 +146,11 @@ if (!highways_gpkg %in% dir (dir_out))
     st_write (highways$geometry, paste0 (dir_out, highways_gpkg))
 }
 
-public_transport <- st_read (paste0 (dir_out, public_transport_station_gpkg))
+amenities <- st_read (paste0 (dir_out, amenities_gpkg))
 highways <- st_read (paste0 (dir_out, highways_gpkg))
 junctions <- st_read (paste0 (dir_out, junctions_gpkg))
+public_transport <- st_read (paste0 (dir_out, public_transport_station_gpkg))
+shops <- st_read (paste0 (dir_out, shops_gpkg))
 
 ```
 
