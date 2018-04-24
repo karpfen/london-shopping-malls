@@ -41,6 +41,7 @@ highways_gpkg <- "highways.gpkg"
 amenities_gpkg <- "amenity.gpkg"
 shops_gpkg <- "shop.gpkg"
 dir_out <- "gpkg/"
+dir.create (dir_out, showWarnings = FALSE)
 
 place_types <- fromJSON (file = "placeTypes.json")
 
