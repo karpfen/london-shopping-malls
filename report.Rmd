@@ -38,6 +38,8 @@ malls_5000m_gpkg <- "malls_5000m.gpkg"
 public_transport_station_gpkg <- "public_transport_station.gpkg"
 junctions_gpkg <- "junctions.gpkg"
 highways_gpkg <- "highways.gpkg"
+amenities_gpkg <- "amenity.gpkg"
+shops_gpkg <- "shop.gpkg"
 dir_out <- "gpkg/"
 
 place_types <- fromJSON (file = "placeTypes.json")
@@ -83,6 +85,8 @@ for (i in seq_along (shop_classes))
         }
     }
 }
+if (!shops_gpkg %in% dir (dir_out))
+    system ("merge_gpkg.sh shop")
 
 if (!public_transport_station_gpkg %in% dir (dir_out))
 {
@@ -129,6 +133,8 @@ for (i in seq_along (amenity_classes))
         }
     }
 }
+if (!amenities_gpkg %in% dir (dir_out))
+    system ("merge_gpkg.sh amenity")
 
 if (!highways_gpkg %in% dir (dir_out))
 {
@@ -142,6 +148,7 @@ if (!highways_gpkg %in% dir (dir_out))
 public_transport <- st_read (paste0 (dir_out, public_transport_station_gpkg))
 highways <- st_read (paste0 (dir_out, highways_gpkg))
 junctions <- st_read (paste0 (dir_out, junctions_gpkg))
+
 ```
 
 ```{r results = 'asis', warnings = FALSE, message = FALSE}
