@@ -49,10 +49,8 @@ if (!malls_500m_gpkg %in% dir (dir_out))
 {
     malls <- osm_to_sf (bbox = bbox_coords, crs = crs_utm_london, key = "shop",
                         value = "mall", geom_type = "osm_polygons")
-    malls_500m <- malls %>% st_buffer (500) %>% st_union %>%
-        st_cast ("POLYGON")
-    malls_5000m <- malls %>% st_buffer (5000) %>% st_union %>%
-        st_cast ("POLYGON")
+    malls_500m <- malls %>% st_buffer (500)
+    malls_5000m <- malls %>% st_buffer (5000)
     st_write (malls_500m, paste0 (dir_out, malls_500m_gpkg))
     st_write (malls_5000m, paste0 (dir_out, malls_5000m_gpkg))
 }
