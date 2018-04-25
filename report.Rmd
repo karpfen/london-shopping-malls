@@ -52,6 +52,7 @@ malls_500m_gpkg <- "malls_500m.gpkg"
 malls_5000m_gpkg <- "malls_5000m.gpkg"
 public_transport_station_gpkg <- "public_transport_station.gpkg"
 shops_gpkg <- "shop.gpkg"
+results_gpkg <- "results.gpkg"
 dir_out <- "gpkg/"
 dir.create (dir_out, showWarnings = FALSE)
 
@@ -210,15 +211,42 @@ proximity <- function (c1, c2, av)
 ```
 
 ```{r results = 'asis', warnings = FALSE, message = FALSE}
-malls_result <- malls
+tc <- function (func)
+{
+    res <- try (func, silent = TRUE)
+    if (inherits (res, "try-error"))
+        res <- NA
+
+    return (res)
+}
+
+res <- matrix (FALSE, nrow = nrow (malls), ncol = 7) %>% as.data.frame
+names (res) <- c ("occurence_shops", "occurence_amenities",
+                  "distribution_shops", "distribution_amenities",
+                  "proximity_transport", "proximity_junction",
+                  "proximity_highway")
+
 for (i in seq_len (nrow (malls)))
 {
-    mall <- malls_result %>% extract (i, )
+    mall <- malls %>% extract (i, )
     mall_500m <- malls_500m %>% extract (i, ) %>% extract ("geom")
     mall_5000m <- malls_5000m %>% extract (i, ) %>% extract ("geom")
 
-    shops_i <- clip_pts_by_poly (shops, mall_500m)
     amenities_i <- clip_pts_by_poly (amenities, mall_500m)
+    highways_i <- clip_pts_by_poly (highways, mall_5000m)
+    junctions_i <- clip_pts_by_poly (junctions, mall_5000m)
     public_transport_i <- clip_pts_by_poly (public_transport, mall_500m)
+    shops_i <- clip_pts_by_poly (shops, mall_500m)
+
+    res [i, 1] <- tc (occurence (shops_i, 40, 0))
+    res [i, 2] <- tc (occurence (amenities_i, 40, 0))
+    res [i, 3] <- tc (distribution (shops_i, c (-0.1, Inf)))
+    res [i, 4] <- tc (distribution (amenities_i, c (-0.1, Inf)))
+    res [i, 5] <- tc (proximity (mall, public_transport_i, c (0, 250)))
+    res [i, 6] <- tc (occurence (junctions_i, 0, 2000))
+    res [i, 7] <- tc (occurence (highways_i, 0, 2000))
 }
+malls_result <- bind_cols (malls, res)
+
+st_write (malls_result, paste0 (dir_out, results_gpkg), quiet = TRUE)
 ```
