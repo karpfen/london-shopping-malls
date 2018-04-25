@@ -245,6 +245,7 @@ for (i in seq_len (nrow (malls)))
     res [i, 5] <- tc (proximity (mall, public_transport_i, c (0, 250)))
     res [i, 6] <- tc (occurence (junctions_i, 0, 2000))
     res [i, 7] <- tc (occurence (highways_i, 0, 2000))
+    res <- ifelse (res == TRUE, 1, 0) %>% as.data.frame
 }
 malls_result <- bind_cols (malls, res)
 
