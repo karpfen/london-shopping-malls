@@ -10,6 +10,8 @@ output:
 ---
 
 ```{r warnings = FALSE, message = FALSE, echo = FALSE}
+library (ape)
+library (dplyr)
 library (magrittr)
 library (osmdata)
 library (rjson)
@@ -31,6 +33,12 @@ osm_to_sf <- function (bbox, crs, geom_type, key, value)
         st_as_sf %>%
         st_transform (crs)
     feat
+}
+
+clip_pts_by_poly <- function (pts, pol)
+{
+    keep <- st_contains (st_geometry (pol), st_geometry (pts)) %>% extract2 (1)
+    pts %>% extract (keep, )
 }
 
 amenities_gpkg <- "amenity.gpkg"
@@ -56,9 +64,9 @@ if (!malls_gpkg %in% dir (dir_out))
     st_write (malls_500m, paste0 (dir_out, malls_500m_gpkg))
     st_write (malls_5000m, paste0 (dir_out, malls_5000m_gpkg))
 }
-malls <- st_read (paste0 (dir_out, malls_gpkg))
-malls_500m <- st_read (paste0 (dir_out, malls_500m_gpkg))
-malls_5000m <- st_read (paste0 (dir_out, malls_5000m_gpkg))
+malls <- st_read (paste0 (dir_out, malls_gpkg), quiet = TRUE)
+malls_500m <- st_read (paste0 (dir_out, malls_500m_gpkg), quiet = TRUE)
+malls_5000m <- st_read (paste0 (dir_out, malls_5000m_gpkg), quiet = TRUE)
 
 amenity_classes <- place_types$amenity %>% names
 for (i in seq_along (amenity_classes))
@@ -76,7 +84,7 @@ for (i in seq_along (amenity_classes))
             if (!inherits (am, "try-error"))
             {
                 if (dim (am) [1] > 0)
-                    am %<>% st_intersection (malls_500m)
+                    am %<>% clip_pts_by_poly (malls_500m)
                 if (dim (am) [1] > 0)
                 {
                     am <- st_sf (data.frame (am$geometry,
@@ -97,7 +105,7 @@ if (!highways_gpkg %in% dir (dir_out))
     highways <- osm_to_sf (bbox = bbox_coords, crs = crs_utm_london,
                            geom_type = "osm_lines", key = "highway",
                            value = c ("primary", "secondary"))
-    highways %<>% st_intersection (malls_5000m)
+    highways %<>% clip_pts_by_poly (malls_5000m)
     st_write (highways$geometry, paste0 (dir_out, highways_gpkg))
 }
 
@@ -106,7 +114,7 @@ if (!junctions_gpkg %in% dir (dir_out))
     junctions <- osm_to_sf (bbox = bbox_coords, crs = crs_utm_london,
                                    key = "highway", value = "motorway_junction",
                                    geom_type = "osm_points")
-    junctions %<>% st_intersection (malls_5000m)
+    junctions %<>% clip_pts_by_poly (malls_5000m)
     st_write (junctions$geometry, paste0 (dir_out, junctions_gpkg))
 }
 
@@ -115,7 +123,7 @@ if (!public_transport_station_gpkg %in% dir (dir_out))
     public_transport <- osm_to_sf (bbox = bbox_coords, crs = crs_utm_london,
                                    key = "public_transport", value = "station",
                                    geom_type = "osm_points")
-    public_transport %<>% st_intersection (malls_500m)
+    public_transport %<>% clip_pts_by_poly (malls_500m)
     st_write (public_transport$geometry,
               paste0 (dir_out, public_transport_station_gpkg))
 }
@@ -135,7 +143,7 @@ for (i in seq_along (shop_classes))
             if (!inherits (sh, "try-error"))
             {
                 if (dim (sh) [1] > 0)
-                    sh %<>% st_intersection (malls_500m)
+                    sh %<>% clip_pts_by_poly (malls_500m)
                 if (dim (sh) [1] > 0)
                 {
                     sh <- st_sf (data.frame (sh$geometry,
@@ -151,22 +159,26 @@ for (i in seq_along (shop_classes))
 if (!shops_gpkg %in% dir (dir_out))
     system ("bash merge_gpkg.sh shop")
 
-amenities <- st_read (paste0 (dir_out, amenities_gpkg))
-highways <- st_read (paste0 (dir_out, highways_gpkg))
-junctions <- st_read (paste0 (dir_out, junctions_gpkg))
-public_transport <- st_read (paste0 (dir_out, public_transport_station_gpkg))
-shops <- st_read (paste0 (dir_out, shops_gpkg))
+amenities <- st_read (paste0 (dir_out, amenities_gpkg), quiet = TRUE)
+highways <- st_read (paste0 (dir_out, highways_gpkg), quiet = TRUE)
+junctions <- st_read (paste0 (dir_out, junctions_gpkg), quiet = TRUE)
+public_transport <- st_read (paste0 (dir_out, public_transport_station_gpkg),
+                             quiet = TRUE)
+shops <- st_read (paste0 (dir_out, shops_gpkg), quiet = TRUE)
 ```
 
 ```{r results = 'asis', warnings = FALSE, message = FALSE}
-occurence <- function (component, n, m)
-{
-    l <- length (component)
-    return (l >= n && l <= m)
-}
-
 property <- function (component, prop)
 {
+}
+
+occurence <- function (component, n, m)
+{
+    if (m == 0)
+        m <- Inf
+    l <- length (component)
+
+    return (l >= n && l <= m)
 }
 
 correlation <- function (c1, c2, ns)
@@ -175,12 +187,34 @@ correlation <- function (c1, c2, ns)
 
 distribution <- function (component, sai)
 {
+    class_counts <- component %>% add_count (class) %>% extract2 ("n")
+    coords <- st_coordinates (component)
+    idists <- coords %>% dist %>% as.matrix %>% divide_by (1)
+    diag (idists) <- 0
+    m_i <- Moran.I (class_counts, idists) %>% extract2 ("observed")
+
+    return (m_i >= sai [1] && m_i <= sai [2])
 }
 
 proximity <- function (c1, c2, av)
 {
+    c1_pnt <- st_centroid (c1)
+    dists <- st_distance (c1_pnt, c2) %>% as.numeric %>% mean 
+
+    return (dists >= av [1] && dists <= av [2])
 }
 ```
 
 ```{r results = 'asis', warnings = FALSE, message = FALSE}
+malls_result <- malls
+for (i in seq_len (nrow (malls)))
+{
+    mall <- malls_result %>% extract (i, )
+    mall_500m <- malls_500m %>% extract (i, ) %>% extract ("geom")
+    mall_5000m <- malls_5000m %>% extract (i, ) %>% extract ("geom")
+
+    shops_i <- clip_pts_by_poly (shops, mall_500m)
+    amenities_i <- clip_pts_by_poly (amenities, mall_500m)
+    public_transport_i <- clip_pts_by_poly (public_transport, mall_500m)
+}
 ```
