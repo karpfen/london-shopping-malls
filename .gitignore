@@ -4,6 +4,7 @@
 !gpkg/amenity.gpkg
 !gpkg/malls_5000m.gpkg
 !gpkg/malls_500m.gpkg
+!gpkg/malls.gpkg
 !gpkg/highways.gpkg
 !gpkg/junctions.gpkg
 !gpkg/public_transport_station.gpkg
