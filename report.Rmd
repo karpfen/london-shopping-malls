@@ -32,13 +32,16 @@ osm_to_sf <- function (bbox, crs, geom_type, key, value)
         extract2 (geom_type) %>%
         st_as_sf %>%
         st_transform (crs)
-    feat
+
+    return (feat)
 }
 
 clip_pts_by_poly <- function (pts, pol)
 {
     keep <- st_contains (st_geometry (pol), st_geometry (pts)) %>% extract2 (1)
-    pts %>% extract (keep, )
+    pts %<>% extract (keep, )
+
+    return (pts)
 }
 
 amenities_gpkg <- "amenity.gpkg"
@@ -60,9 +63,9 @@ if (!malls_gpkg %in% dir (dir_out))
                         value = "mall", geom_type = "osm_polygons")
     malls_500m <- malls %>% st_buffer (500)
     malls_5000m <- malls %>% st_buffer (5000)
-    st_write (malls$geometry, paste0 (dir_out, malls_gpkg))
-    st_write (malls_500m, paste0 (dir_out, malls_500m_gpkg))
-    st_write (malls_5000m, paste0 (dir_out, malls_5000m_gpkg))
+    st_write (malls$geometry, paste0 (dir_out, malls_gpkg), quiet = TRUE)
+    st_write (malls_500m, paste0 (dir_out, malls_500m_gpkg), quiet = TRUE)
+    st_write (malls_5000m, paste0 (dir_out, malls_5000m_gpkg), quiet = TRUE)
 }
 malls <- st_read (paste0 (dir_out, malls_gpkg), quiet = TRUE)
 malls_500m <- st_read (paste0 (dir_out, malls_500m_gpkg), quiet = TRUE)
@@ -91,7 +94,7 @@ for (i in seq_along (amenity_classes))
                                              class = amenity_classes [i],
                                              key = "amenity",
                                              value = vals [j]))
-                    st_write (am, paste0 (dir_out, gpkg_name))
+                    st_write (am, paste0 (dir_out, gpkg_name), quiet = TRUE)
                 }
             }
         }
@@ -106,7 +109,7 @@ if (!highways_gpkg %in% dir (dir_out))
                            geom_type = "osm_lines", key = "highway",
                            value = c ("primary", "secondary"))
     highways %<>% clip_pts_by_poly (malls_5000m)
-    st_write (highways$geometry, paste0 (dir_out, highways_gpkg))
+    st_write (highways$geometry, paste0 (dir_out, highways_gpkg), quiet = TRUE)
 }
 
 if (!junctions_gpkg %in% dir (dir_out))
@@ -115,7 +118,8 @@ if (!junctions_gpkg %in% dir (dir_out))
                                    key = "highway", value = "motorway_junction",
                                    geom_type = "osm_points")
     junctions %<>% clip_pts_by_poly (malls_5000m)
-    st_write (junctions$geometry, paste0 (dir_out, junctions_gpkg))
+    st_write (junctions$geometry, paste0 (dir_out, junctions_gpkg),
+              quiet = TRUE)
 }
 
 if (!public_transport_station_gpkg %in% dir (dir_out))
@@ -124,7 +128,7 @@ if (!public_transport_station_gpkg %in% dir (dir_out))
                                    key = "public_transport", value = "station",
                                    geom_type = "osm_points")
     public_transport %<>% clip_pts_by_poly (malls_500m)
-    st_write (public_transport$geometry,
+    st_write (public_transport$geometry, quiet = TRUE,
               paste0 (dir_out, public_transport_station_gpkg))
 }
 
@@ -150,7 +154,7 @@ for (i in seq_along (shop_classes))
                                              class = shop_classes [i],
                                              key = "shop",
                                              value = vals [j]))
-                    st_write (sh, paste0 (dir_out, gpkg_name))
+                    st_write (sh, paste0 (dir_out, gpkg_name), quiet = TRUE)
                 }
             }
         }
@@ -176,7 +180,7 @@ occurence <- function (component, n, m)
 {
     if (m == 0)
         m <- Inf
-    l <- length (component)
+    l <- nrow (component)
 
     return (l >= n && l <= m)
 }
