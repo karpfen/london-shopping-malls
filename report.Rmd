@@ -173,24 +173,11 @@ shops <- st_read (paste0 (dir_out, shops_gpkg), quiet = TRUE)
 ```
 
 ```{r results = 'asis', warnings = FALSE, message = FALSE}
-property <- function (component, prop)
-{
-}
+occurence <- function (component) { nrow (component) }
 
-occurence <- function (component, n, m)
-{
-    if (m == 0)
-        m <- Inf
-    l <- nrow (component)
+correlation <- function (c1, c2) { nrow (c1) / nrow (c2) }
 
-    return (l >= n && l <= m)
-}
-
-correlation <- function (c1, c2, ns)
-{
-}
-
-distribution <- function (component, sai)
+distribution <- function (component)
 {
     class_counts <- component %>% add_count (class) %>% extract2 ("n")
     coords <- st_coordinates (component)
@@ -198,15 +185,15 @@ distribution <- function (component, sai)
     diag (idists) <- 0
     m_i <- Moran.I (class_counts, idists) %>% extract2 ("observed")
 
-    return (m_i >= sai [1] && m_i <= sai [2])
+    return (m_i)
 }
 
-proximity <- function (c1, c2, av)
+proximity <- function (c1, c2)
 {
     c1_pnt <- st_centroid (c1)
     dists <- st_distance (c1_pnt, c2) %>% as.numeric %>% mean 
 
-    return (dists >= av [1] && dists <= av [2])
+    return (dists)
 }
 ```
 
@@ -220,8 +207,9 @@ tc <- function (func)
     return (res)
 }
 
-res <- matrix (FALSE, nrow = nrow (malls), ncol = 7) %>% as.data.frame
-names (res) <- c ("occurence_shops", "occurence_amenities",
+res <- matrix (NA, nrow = nrow (malls), ncol = 9) %>% as.data.frame
+names (res) <- c ("occurence_shops_500m", "occurence_amenities_500m",
+                  "occurence_shops", "occurence_amenities",
                   "distribution_shops", "distribution_amenities",
                   "proximity_transport", "proximity_junction",
                   "proximity_highway")
@@ -232,20 +220,23 @@ for (i in seq_len (nrow (malls)))
     mall_500m <- malls_500m %>% extract (i, ) %>% extract ("geom")
     mall_5000m <- malls_5000m %>% extract (i, ) %>% extract ("geom")
 
-    amenities_i <- clip_pts_by_poly (amenities, mall_500m)
+    amenities_500m_i <- clip_pts_by_poly (amenities, mall_500m)
+    amenities_i <- clip_pts_by_poly (amenities, mall)
     highways_i <- clip_pts_by_poly (highways, mall_5000m)
     junctions_i <- clip_pts_by_poly (junctions, mall_5000m)
     public_transport_i <- clip_pts_by_poly (public_transport, mall_500m)
-    shops_i <- clip_pts_by_poly (shops, mall_500m)
+    shops_500m_i <- clip_pts_by_poly (shops, mall_500m)
+    shops_i <- clip_pts_by_poly (shops, mall)
 
-    res [i, 1] <- tc (occurence (shops_i, 40, 0))
-    res [i, 2] <- tc (occurence (amenities_i, 40, 0))
-    res [i, 3] <- tc (distribution (shops_i, c (-0.1, Inf)))
-    res [i, 4] <- tc (distribution (amenities_i, c (-0.1, Inf)))
-    res [i, 5] <- tc (proximity (mall, public_transport_i, c (0, 250)))
-    res [i, 6] <- tc (occurence (junctions_i, 0, 2000))
-    res [i, 7] <- tc (occurence (highways_i, 0, 2000))
-    res <- ifelse (res == TRUE, 1, 0) %>% as.data.frame
+    res [i, 1] <- tc (occurence (shops_500m_i))
+    res [i, 2] <- tc (occurence (amenities_500m_i))
+    res [i, 3] <- tc (occurence (shops_i))
+    res [i, 4] <- tc (occurence (amenities_i))
+    res [i, 5] <- tc (distribution (shops_500m_i))
+    res [i, 6] <- tc (distribution (amenities_500m_i))
+    res [i, 7] <- tc (proximity (mall, public_transport_i))
+    res [i, 8] <- tc (occurence (junctions_i))
+    res [i, 9] <- tc (occurence (highways_i))
 }
 malls_result <- bind_cols (malls, res)
 
