@@ -173,7 +173,7 @@ shops <- st_read (paste0 (dir_out, shops_gpkg), quiet = TRUE)
 ```
 
 ```{r results = 'asis', warnings = FALSE, message = FALSE}
-occurence <- function (component) { nrow (component) }
+occurrence <- function (component) { nrow (component) }
 
 correlation <- function (c1, c2) { nrow (c1) / nrow (c2) }
 
@@ -213,9 +213,9 @@ tc <- function (func)
     return (res)
 }
 
-cnames_res <- c ("occurence_shops_500m", "occurence_amenities_500m",
-                  "occurence_shops", "occurence_amenities",
-                  "occurence_junctions_5000m", "occurence_highways_5000m",
+cnames_res <- c ("occurrence_shops_500m", "occurrence_amenities_500m",
+                  "occurrence_shops", "occurrence_amenities",
+                  "occurrence_junctions_5000m", "occurrence_highways_5000m",
                   "distribution_shop_500ms", "distribution_amenities_500m",
                   "proximity_shops_500m", "proximity_amenities_500m",
                   "proximity_shops", "proximity_amenities",
@@ -239,12 +239,12 @@ for (i in seq_len (nrow (malls)))
     shops_500m_i <- clip_pts_by_poly (shops, mall_500m)
     shops_i <- clip_pts_by_poly (shops, mall)
 
-    res [i, 1] <- tc (occurence (shops_500m_i))
-    res [i, 2] <- tc (occurence (amenities_500m_i))
-    res [i, 3] <- tc (occurence (shops_i))
-    res [i, 4] <- tc (occurence (amenities_i))
-    res [i, 5] <- tc (occurence (junctions_i))
-    res [i, 6] <- tc (occurence (highways_i))
+    res [i, 1] <- tc (occurrence (shops_500m_i))
+    res [i, 2] <- tc (occurrence (amenities_500m_i))
+    res [i, 3] <- tc (occurrence (shops_i))
+    res [i, 4] <- tc (occurrence (amenities_i))
+    res [i, 5] <- tc (occurrence (junctions_i))
+    res [i, 6] <- tc (occurrence (highways_i))
     res [i, 7] <- tc (distribution (shops_500m_i))
     res [i, 8] <- tc (distribution (amenities_500m_i))
     res [i, 9] <- tc (proximity (mall, shops_500m_i))
