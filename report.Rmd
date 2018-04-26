@@ -220,7 +220,7 @@ cnames_res <- c ("occurence_shops_500m", "occurence_amenities_500m",
                   "proximity_shops_500m", "proximity_amenities_500m",
                   "proximity_shops", "proximity_amenities",
                   "proximity_transport_500m", "proximity_junction_5km",
-                  "proximity_highway_5km")
+                  "proximity_highway_5km", "correlation_shops_amenities")
 res <- matrix (NA, nrow = nrow (malls), ncol = length (cnames_res)) %>%
     as.data.frame
 names (res) <- cnames_res
@@ -254,6 +254,7 @@ for (i in seq_len (nrow (malls)))
     res [i, 13] <- tc (proximity (mall, public_transport_i))
     res [i, 14] <- tc (proximity (mall, junctions_i))
     res [i, 15] <- tc (proximity (mall, highways_i))
+    res [i, 16] <- tc (correlation (shops_i, amenities_i))
 }
 malls_result <- bind_cols (malls, res)
 
