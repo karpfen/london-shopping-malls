@@ -216,6 +216,7 @@ tc <- function (func)
 cnames_res <- c ("occurrence_shops_500m", "occurrence_amenities_500m",
                   "occurrence_shops", "occurrence_amenities",
                   "occurrence_junctions_5000m", "occurrence_highways_5000m",
+                  "distribution_shop", "distribution_amenities",
                   "distribution_shop_500ms", "distribution_amenities_500m",
                   "proximity_shops_500m", "proximity_amenities_500m",
                   "proximity_shops", "proximity_amenities",
@@ -245,16 +246,18 @@ for (i in seq_len (nrow (malls)))
     res [i, 4] <- tc (occurrence (amenities_i))
     res [i, 5] <- tc (occurrence (junctions_i))
     res [i, 6] <- tc (occurrence (highways_i))
-    res [i, 7] <- tc (distribution (shops_500m_i))
-    res [i, 8] <- tc (distribution (amenities_500m_i))
-    res [i, 9] <- tc (proximity (mall, shops_500m_i))
-    res [i, 10] <- tc (proximity (mall, amenities_500m_i))
-    res [i, 11] <- tc (proximity (mall, shops_i))
-    res [i, 12] <- tc (proximity (mall, amenities_i))
-    res [i, 13] <- tc (proximity (mall, public_transport_i))
-    res [i, 14] <- tc (proximity (mall, junctions_i))
-    res [i, 15] <- tc (proximity (mall, highways_i))
-    res [i, 16] <- tc (correlation (shops_i, amenities_i))
+    res [i, 7] <- tc (distribution (shops_i))
+    res [i, 8] <- tc (distribution (amenities_i))
+    res [i, 9] <- tc (distribution (shops_500m_i))
+    res [i, 10] <- tc (distribution (amenities_500m_i))
+    res [i, 11] <- tc (proximity (mall, shops_500m_i))
+    res [i, 12] <- tc (proximity (mall, amenities_500m_i))
+    res [i, 13] <- tc (proximity (mall, shops_i))
+    res [i, 14] <- tc (proximity (mall, amenities_i))
+    res [i, 15] <- tc (proximity (mall, public_transport_i))
+    res [i, 16] <- tc (proximity (mall, junctions_i))
+    res [i, 17] <- tc (proximity (mall, highways_i))
+    res [i, 18] <- tc (correlation (shops_i, amenities_i))
 }
 malls_result <- bind_cols (malls, res)
 
