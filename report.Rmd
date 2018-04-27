@@ -54,7 +54,9 @@ public_transport_station_gpkg <- "public_transport_station.gpkg"
 shops_gpkg <- "shop.gpkg"
 results_gpkg <- "results.gpkg"
 dir_out <- "gpkg/"
+dir_out_csv <- "csv/"
 dir.create (dir_out, showWarnings = FALSE)
+dir.create (dir_out_csv, showWarnings = FALSE)
 
 place_types <- fromJSON (file = "placeTypes.json")
 
@@ -260,6 +262,18 @@ for (i in seq_len (nrow (malls)))
     res [i, 18] <- tc (correlation (shops_i, amenities_i))
 }
 malls_result <- bind_cols (malls, res)
+res_min <- sapply (res, min, na.rm = TRUE) %>% t %>% unname
+res_mean <- sapply (res, mean, na.rm = TRUE) %>% t %>% unname
+res_median <- sapply (res, median, na.rm = TRUE) %>% t %>% unname
+res_max <- sapply (res, max, na.rm = TRUE) %>% t %>% unname
+
+res_stats <- rbind (res_min, res_mean, res_median, res_max)
+colnames (res_stats) <- cnames_res
+rownames (res_stats) <- c ("min", "mean", "median", "max")
+
+write.table (res, paste0 (dir_out_csv, "results.csv"), row.names = FALSE,
+             sep = ",", quote = FALSE)
+write.csv (res_stats, paste0 (dir_out_csv, "results_stats.csv"), quote = FALSE)
 
 st_write (malls_result, paste0 (dir_out, results_gpkg), quiet = TRUE)
 ```
