@@ -16,6 +16,7 @@ library (magrittr)
 library (osmdata)
 library (rjson)
 library (sf)
+library (sp)
 
 crs_utm_london <- 32630
 bbox_coords <- c (-0.510375, 51.286758, 0.334015, 51.691875)
@@ -53,6 +54,7 @@ malls_5000m_gpkg <- "malls_5000m.gpkg"
 public_transport_station_gpkg <- "public_transport_station.gpkg"
 shops_gpkg <- "shop.gpkg"
 results_gpkg <- "results.gpkg"
+results_hex_gpkg <- "results_hex.gpkg"
 dir_out <- "gpkg/"
 dir_out_csv <- "csv/"
 dir.create (dir_out, showWarnings = FALSE)
@@ -89,8 +91,6 @@ for (i in seq_along (amenity_classes))
                              geom_type = "osm_points"), silent = TRUE)
             if (!inherits (am, "try-error"))
             {
-                if (dim (am) [1] > 0)
-                    am %<>% clip_pts_by_poly (malls_500m)
                 if (dim (am) [1] > 0)
                 {
                     am <- st_sf (data.frame (am$geometry,
@@ -149,8 +149,6 @@ for (i in seq_along (shop_classes))
                              geom_type = "osm_points"), silent = TRUE)
             if (!inherits (sh, "try-error"))
             {
-                if (dim (sh) [1] > 0)
-                    sh %<>% clip_pts_by_poly (malls_500m)
                 if (dim (sh) [1] > 0)
                 {
                     sh <- st_sf (data.frame (sh$geometry,
@@ -228,52 +226,121 @@ res <- matrix (NA, nrow = nrow (malls), ncol = length (cnames_res)) %>%
     as.data.frame
 names (res) <- cnames_res
 
-for (i in seq_len (nrow (malls)))
+if (!results_gpkg %in% dir (dir_out))
 {
-    mall <- malls %>% extract (i, ) %>% st_buffer (5)
-    mall_500m <- malls_500m %>% extract (i, ) %>% extract ("geom")
-    mall_5000m <- malls_5000m %>% extract (i, ) %>% extract ("geom")
+    for (i in seq_len (nrow (malls)))
+    {
+        mall <- malls %>% extract (i, ) %>% st_buffer (5)
+        mall_500m <- malls_500m %>% extract (i, ) %>% extract ("geom")
+        mall_5000m <- malls_5000m %>% extract (i, ) %>% extract ("geom")
 
-    amenities_500m_i <- clip_pts_by_poly (amenities, mall_500m)
-    amenities_i <- clip_pts_by_poly (amenities, mall)
-    highways_i <- clip_pts_by_poly (highways, mall_5000m)
-    junctions_i <- clip_pts_by_poly (junctions, mall_5000m)
-    public_transport_i <- clip_pts_by_poly (public_transport, mall_500m)
-    shops_500m_i <- clip_pts_by_poly (shops, mall_500m)
-    shops_i <- clip_pts_by_poly (shops, mall)
+        amenities_500m_i <- clip_pts_by_poly (amenities, mall_500m)
+        amenities_i <- clip_pts_by_poly (amenities, mall)
+        highways_i <- clip_pts_by_poly (highways, mall_5000m)
+        junctions_i <- clip_pts_by_poly (junctions, mall_5000m)
+        public_transport_i <- clip_pts_by_poly (public_transport, mall_500m)
+        shops_500m_i <- clip_pts_by_poly (shops, mall_500m)
+        shops_i <- clip_pts_by_poly (shops, mall)
 
-    res [i, 1] <- tc (occurrence (shops_500m_i))
-    res [i, 2] <- tc (occurrence (amenities_500m_i))
-    res [i, 3] <- tc (occurrence (shops_i))
-    res [i, 4] <- tc (occurrence (amenities_i))
-    res [i, 5] <- tc (occurrence (junctions_i))
-    res [i, 6] <- tc (occurrence (highways_i))
-    res [i, 7] <- tc (distribution (shops_i))
-    res [i, 8] <- tc (distribution (amenities_i))
-    res [i, 9] <- tc (distribution (shops_500m_i))
-    res [i, 10] <- tc (distribution (amenities_500m_i))
-    res [i, 11] <- tc (proximity (mall, shops_500m_i))
-    res [i, 12] <- tc (proximity (mall, amenities_500m_i))
-    res [i, 13] <- tc (proximity (mall, shops_i))
-    res [i, 14] <- tc (proximity (mall, amenities_i))
-    res [i, 15] <- tc (proximity (mall, public_transport_i))
-    res [i, 16] <- tc (proximity (mall, junctions_i))
-    res [i, 17] <- tc (proximity (mall, highways_i))
-    res [i, 18] <- tc (correlation (shops_i, amenities_i))
+        res [i, 1] <- tc (occurrence (shops_500m_i))
+        res [i, 2] <- tc (occurrence (amenities_500m_i))
+        res [i, 3] <- tc (occurrence (shops_i))
+        res [i, 4] <- tc (occurrence (amenities_i))
+        res [i, 5] <- tc (occurrence (junctions_i))
+        res [i, 6] <- tc (occurrence (highways_i))
+        res [i, 7] <- tc (distribution (shops_i))
+        res [i, 8] <- tc (distribution (amenities_i))
+        res [i, 9] <- tc (distribution (shops_500m_i))
+        res [i, 10] <- tc (distribution (amenities_500m_i))
+        res [i, 11] <- tc (proximity (mall, shops_500m_i))
+        res [i, 12] <- tc (proximity (mall, amenities_500m_i))
+        res [i, 13] <- tc (proximity (mall, shops_i))
+        res [i, 14] <- tc (proximity (mall, amenities_i))
+        res [i, 15] <- tc (proximity (mall, public_transport_i))
+        res [i, 16] <- tc (proximity (mall, junctions_i))
+        res [i, 17] <- tc (proximity (mall, highways_i))
+        res [i, 18] <- tc (correlation (shops_i, amenities_i))
+    }
+    malls_result <- bind_cols (malls, res)
+    res_min <- sapply (res, min, na.rm = TRUE) %>% t %>% unname
+    res_mean <- sapply (res, mean, na.rm = TRUE) %>% t %>% unname
+    res_median <- sapply (res, median, na.rm = TRUE) %>% t %>% unname
+    res_max <- sapply (res, max, na.rm = TRUE) %>% t %>% unname
+
+    res_stats <- rbind (res_min, res_mean, res_median, res_max)
+    colnames (res_stats) <- cnames_res
+    rownames (res_stats) <- c ("min", "mean", "median", "max")
+
+    write.table (res, paste0 (dir_out_csv, "results.csv"), row.names = FALSE,
+                 sep = ",", quote = FALSE)
+    write.csv (res_stats, paste0 (dir_out_csv, "results_stats.csv"),
+               quote = FALSE)
+
+    st_write (malls_result, paste0 (dir_out, results_gpkg), quiet = TRUE)
 }
-malls_result <- bind_cols (malls, res)
-res_min <- sapply (res, min, na.rm = TRUE) %>% t %>% unname
-res_mean <- sapply (res, mean, na.rm = TRUE) %>% t %>% unname
-res_median <- sapply (res, median, na.rm = TRUE) %>% t %>% unname
-res_max <- sapply (res, max, na.rm = TRUE) %>% t %>% unname
+malls_result <- st_read (paste0 (dir_out, results_gpkg), quiet = TRUE)
+```
 
-res_stats <- rbind (res_min, res_mean, res_median, res_max)
-colnames (res_stats) <- cnames_res
-rownames (res_stats) <- c ("min", "mean", "median", "max")
+```{r results = 'asis', warnings = FALSE, message = FALSE}
+aoi_wkt <- paste0 ("POLYGON((-0.510375 51.691875, 0.334015 51.691875, ",
+                   "0.334015 51.286758, -0.510375 51.286758, ",
+                   "-0.510375 51.691875))")
+aoi <- st_as_sfc (aoi_wkt) %>% st_set_crs (4326) %>%
+    st_transform (crs_utm_london)
+aoi_sp <- as (aoi, "Spatial") %>% geometry
+pts <- spsample (aoi_sp, type = "hexagonal", cellsize = 1000, offset = c (0, 0))
+hexgrid <- HexPoints2SpatialPolygons (pts) %>% as ("sf")
 
-write.table (res, paste0 (dir_out_csv, "results.csv"), row.names = FALSE,
-             sep = ",", quote = FALSE)
-write.csv (res_stats, paste0 (dir_out_csv, "results_stats.csv"), quote = FALSE)
+cnames_hex <- c ( "occurrence_shops", "occurrence_amenities",
+                  "distribution_shop", "distribution_amenities",
+                  "proximity_shops", "proximity_amenities",
+                  "proximity_transport", "correlation_shops_amenities")
 
-st_write (malls_result, paste0 (dir_out, results_gpkg), quiet = TRUE)
+res_hex <- matrix (NA, nrow = nrow (hexgrid), ncol = length (cnames_hex)) %>%
+    as.data.frame
+names (res_hex) <- cnames_hex
+
+if (!results_hex_gpkg %in% dir (dir_out))
+{
+    for (i in seq_len (nrow (hexgrid)))
+    {
+        cell <- hexgrid [i, ]
+        amenities_i <- clip_pts_by_poly (amenities, cell)
+        public_transport_i <- clip_pts_by_poly (public_transport, cell)
+        shops_i <- clip_pts_by_poly (shops, cell)
+
+        res_hex [i, 1] <- tc (occurrence (shops_i))
+        res_hex [i, 2] <- tc (occurrence (amenities_i))
+        res_hex [i, 3] <- tc (distribution (shops_i))
+        res_hex [i, 4] <- tc (distribution (amenities_i))
+        res_hex [i, 5] <- tc (proximity (cell, shops_i))
+        res_hex [i, 6] <- tc (proximity (cell, amenities_i))
+        res_hex [i, 7] <- tc (proximity (cell, public_transport_i))
+        res_hex [i, 8] <- tc (correlation (shops_i, amenities_i))
+    }
+
+    hexgrid <- bind_cols (hexgrid, res_hex)
+    res_hex_min <- sapply (res_hex, min, na.rm = TRUE) %>% t %>% unname
+    res_hex_mean <- sapply (res_hex, mean, na.rm = TRUE) %>% t %>% unname
+    res_hex_median <- sapply (res_hex, median, na.rm = TRUE) %>% t %>% unname
+    res_hex_max <- sapply (res_hex, max, na.rm = TRUE) %>% t %>% unname
+
+    res_hex_stats <- rbind (res_hex_min, res_hex_mean, res_hex_median,
+                            res_hex_max)
+    colnames (res_hex_stats) <- cnames_hex
+    rownames (res_hex_stats) <- c ("min", "mean", "median", "max")
+
+    write.table (res_hex, paste0 (dir_out_csv, "results_hex.csv"),
+                 row.names = FALSE, sep = ",", quote = FALSE)
+    write.csv (res_hex_stats, paste0 (dir_out_csv, "results_hex_stats.csv"),
+               quote = FALSE)
+
+    st_write (hexgrid, paste0 (dir_out, results_hex_gpkg), quiet = TRUE)
+}
+hexgrid <- st_read (paste0 (dir_out, results_hex_gpkg), quiet = TRUE)
+```
+
+```{r, out.width = "1000px", fig.width = 10, fig.height = 10}
+for (cname in cnames_hex)
+    plot (hexgrid[, cname])
 ```
