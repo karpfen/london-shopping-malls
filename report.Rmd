@@ -201,6 +201,14 @@ proximity <- function (c1, c2)
 
     return (dists)
 }
+
+mean_dist_mat <- function (c1)
+{
+    d <- NA
+    if (nrow (c1) > 1)
+        d <- st_distance (c1) %>% as.numeric %>% mean
+    d
+}
 ```
 
 ```{r results = 'asis', warnings = FALSE, message = FALSE}
@@ -230,6 +238,7 @@ if (!results_gpkg %in% dir (dir_out))
 {
     for (i in seq_len (nrow (malls)))
     {
+        print (i)
         mall <- malls %>% extract (i, ) %>% st_buffer (5)
         mall_500m <- malls_500m %>% extract (i, ) %>% extract ("geom")
         mall_5000m <- malls_5000m %>% extract (i, ) %>% extract ("geom")
@@ -248,10 +257,10 @@ if (!results_gpkg %in% dir (dir_out))
         res [i, 4] <- tc (occurrence (amenities_i))
         res [i, 5] <- tc (occurrence (junctions_i))
         res [i, 6] <- tc (occurrence (highways_i))
-        res [i, 7] <- tc (distribution (shops_i))
-        res [i, 8] <- tc (distribution (amenities_i))
-        res [i, 9] <- tc (distribution (shops_500m_i))
-        res [i, 10] <- tc (distribution (amenities_500m_i))
+        #res [i, 7] <- tc (distribution (shops_i))
+        #res [i, 8] <- tc (distribution (amenities_i))
+        #res [i, 9] <- tc (distribution (shops_500m_i))
+        #res [i, 10] <- tc (distribution (amenities_500m_i))
         res [i, 11] <- tc (proximity (mall, shops_500m_i))
         res [i, 12] <- tc (proximity (mall, amenities_500m_i))
         res [i, 13] <- tc (proximity (mall, shops_i))
@@ -261,15 +270,20 @@ if (!results_gpkg %in% dir (dir_out))
         res [i, 17] <- tc (proximity (mall, highways_i))
         res [i, 18] <- tc (correlation (shops_i, amenities_i))
     }
+    res$correlation_shops_amenities [(res [, 18] == Inf)] <- NA
     malls_result <- bind_cols (malls, res)
     res_min <- sapply (res, min, na.rm = TRUE) %>% t %>% unname
     res_mean <- sapply (res, mean, na.rm = TRUE) %>% t %>% unname
     res_median <- sapply (res, median, na.rm = TRUE) %>% t %>% unname
     res_max <- sapply (res, max, na.rm = TRUE) %>% t %>% unname
+    res_sd <- sapply (res, sd, na.rm = TRUE) %>% t %>% unname
+    res_cv <- mod ((100 * res_sd / res_mean), 100)
 
-    res_stats <- rbind (res_min, res_mean, res_median, res_max)
+    
+
+    res_stats <- rbind (res_min, res_mean, res_median, res_max, res_sd, res_cv)
     colnames (res_stats) <- cnames_res
-    rownames (res_stats) <- c ("min", "mean", "median", "max")
+    rownames (res_stats) <- c ("min", "mean", "median", "max", "sd", "cv")
 
     write.table (res, paste0 (dir_out_csv, "results.csv"), row.names = FALSE,
                  sep = ",", quote = FALSE)
@@ -282,53 +296,70 @@ malls_result <- st_read (paste0 (dir_out, results_gpkg), quiet = TRUE)
 ```
 
 ```{r results = 'asis', warnings = FALSE, message = FALSE}
-aoi_wkt <- paste0 ("POLYGON((-0.510375 51.691875, 0.334015 51.691875, ",
-                   "0.334015 51.286758, -0.510375 51.286758, ",
-                   "-0.510375 51.691875))")
-aoi <- st_as_sfc (aoi_wkt) %>% st_set_crs (4326) %>%
-    st_transform (crs_utm_london)
+osm_l <- osmdata::getbb ("London", format_out = "polygon") %>% extract2 (1) %>%
+    extract2 (1)
+wkt <- paste0 ("SRID=4326;POLYGON((",
+                              paste (paste (osm_l [, 1], osm_l [, 2]), collapse
+                                     = ","),
+                              "))")
+aoi <- st_as_sfc (wkt) %>% st_set_crs (4326) %>% st_transform (crs_utm_london)
 aoi_sp <- as (aoi, "Spatial") %>% geometry
-pts <- spsample (aoi_sp, type = "hexagonal", cellsize = 1000, offset = c (0, 0))
+pts <- spsample (aoi_sp, type = "hexagonal", cellsize = 500, offset = c (0, 0))
 hexgrid <- HexPoints2SpatialPolygons (pts) %>% as ("sf")
 
-cnames_hex <- c ( "occurrence_shops", "occurrence_amenities",
-                  "distribution_shop", "distribution_amenities",
-                  "proximity_shops", "proximity_amenities",
-                  "proximity_transport", "correlation_shops_amenities")
+cnames_hex <- c ("occurrence_shops", "occurrence_amenities",
+                 "occurence_bus_stops", "dmat_shops",
+                 "dmat_amenities", "dmat_shops_amenities",
+                 "correlation_shops_amenities")
 
 res_hex <- matrix (NA, nrow = nrow (hexgrid), ncol = length (cnames_hex)) %>%
     as.data.frame
 names (res_hex) <- cnames_hex
+shops %<>% clip_pts_by_poly (aoi)
+amenities %<>% clip_pts_by_poly (aoi)
+
+int_hex_public_t <- st_intersects (hexgrid, public_transport)
+int_hex_shop <- st_intersects (hexgrid, shops)
+int_hex_am <- st_intersects (hexgrid, amenities)
 
 if (!results_hex_gpkg %in% dir (dir_out))
 {
     for (i in seq_len (nrow (hexgrid)))
     {
-        cell <- hexgrid [i, ]
-        amenities_i <- clip_pts_by_poly (amenities, cell)
-        public_transport_i <- clip_pts_by_poly (public_transport, cell)
-        shops_i <- clip_pts_by_poly (shops, cell)
+        print (paste0 (i, "/", nrow(hexgrid)))
 
-        res_hex [i, 1] <- tc (occurrence (shops_i))
-        res_hex [i, 2] <- tc (occurrence (amenities_i))
-        res_hex [i, 3] <- tc (distribution (shops_i))
-        res_hex [i, 4] <- tc (distribution (amenities_i))
-        res_hex [i, 5] <- tc (proximity (cell, shops_i))
-        res_hex [i, 6] <- tc (proximity (cell, amenities_i))
-        res_hex [i, 7] <- tc (proximity (cell, public_transport_i))
-        res_hex [i, 8] <- tc (correlation (shops_i, amenities_i))
+        shop_ids <- int_hex_shop %>% extract2 (i)
+        amenity_ids <- int_hex_am %>% extract2 (i)
+        pt_ids <- int_hex_public_t %>% extract2 (i)
+
+        shops_i <- shops %>% extract (shop_ids, )
+        public_transport_i <- public_transport %>% extract (pt_ids, )
+        amenities_i <- amenities %>% extract (amenity_ids, )
+
+        occ_sh <- tc (occurrence (shops_i))
+        occ_am <- tc (occurrence (amenities_i))
+        res_hex [i, 1] <- occ_sh
+        res_hex [i, 2] <- occ_am
+        res_hex [i, 3] <- tc (occurrence (public_transport_i))
+        res_hex [i, 4] <- tc (mean_dist_mat (shops_i))
+        res_hex [i, 5] <- tc (mean_dist_mat (amenities_i))
+        res_hex [i, 6] <- tc (mean_dist_mat (rbind (shops_i, amenities_i)))
+        res_hex [i, 7] <- occ_sh / occ_am
     }
+    res_hex[, 7] [is.infinite (res_hex [, 7])] <- NA
 
     hexgrid <- bind_cols (hexgrid, res_hex)
     res_hex_min <- sapply (res_hex, min, na.rm = TRUE) %>% t %>% unname
     res_hex_mean <- sapply (res_hex, mean, na.rm = TRUE) %>% t %>% unname
     res_hex_median <- sapply (res_hex, median, na.rm = TRUE) %>% t %>% unname
     res_hex_max <- sapply (res_hex, max, na.rm = TRUE) %>% t %>% unname
+    res_hex_sd <- sapply (res_hex, sd, na.rm = TRUE) %>% t %>% unname
+    res_hex_cv <- mod ((100 * res_hex_sd / res_hex_mean), 100)
 
     res_hex_stats <- rbind (res_hex_min, res_hex_mean, res_hex_median,
-                            res_hex_max)
+                            res_hex_max, res_hex_sd, res_hex_cv)
     colnames (res_hex_stats) <- cnames_hex
-    rownames (res_hex_stats) <- c ("min", "mean", "median", "max")
+    rownames (res_hex_stats) <- c ("min", "mean", "median", "max", "sd", "cv")
 
     write.table (res_hex, paste0 (dir_out_csv, "results_hex.csv"),
                  row.names = FALSE, sep = ",", quote = FALSE)
@@ -340,7 +371,37 @@ if (!results_hex_gpkg %in% dir (dir_out))
 hexgrid <- st_read (paste0 (dir_out, results_hex_gpkg), quiet = TRUE)
 ```
 
+```{r results = 'asis', warnings = FALSE, message = FALSE}
+hexgrid$score <- 0
+hexgrid$mall_contained <- 0
+fs <- hexgrid$occurrence_shops >= 4
+
+p_am <- fs & (hexgrid$occurrence_amenities > 0)
+p_d_shop <- fs & (hexgrid$dmat_shops >= 5.8 )
+p_d_am <- fs & (hexgrid$dmat_amenities >= 6.5)
+p_corr <- fs & (hexgrid$correlation_shops_amenities > 0.6)
+p_am [is.na (p_am)] <- FALSE
+p_d_shop [is.na (p_d_shop)] <- FALSE
+p_d_am [is.na (p_d_am)] <- FALSE
+p_corr [is.na (p_corr)] <- FALSE
+
+hexgrid$score <- colSums (rbind (fs, p_am, p_d_shop, p_d_am, p_corr))
+malls$score <- 0
+
+for (i in seq_len (nrow (malls)))
+{
+    mall <- malls [i, ]
+    hex_idx <- st_intersects (mall, hexgrid) %>% unlist
+    hexgrid$mall_contained [hex_idx] <- hex_idx
+    hex_tile <- hexgrid [hex_idx, ]
+    malls$score [i] <- hex_tile %>% extract2 ("score") %>% mean
+}
+mean (malls$score, na.rm = TRUE)
+mean (hexgrid$score, na.rm = TRUE)
+```
+
 ```{r, out.width = "1000px", fig.width = 10, fig.height = 10}
 for (cname in cnames_hex)
     plot (hexgrid[, cname])
+plot (hexgrid[, "score"])
 ```
