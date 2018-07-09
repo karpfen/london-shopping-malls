@@ -1,7 +1,6 @@
 *.gpkg
 *.html
 *.json
-*.R
 *.swp
 !gpkg/amenity.gpkg
 !gpkg/highways.gpkg
@@ -14,3 +13,4 @@
 !gpkg/shop.gpkg
 !hex_plots.html
 !placeTypes.json
+.Rproj.user
